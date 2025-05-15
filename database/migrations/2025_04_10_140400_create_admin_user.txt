@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use App\Models\User;
+
+class CreateAdminUser extends Migration
+{
+    public function up()
+    {
+        // Memastikan jika belum ada user dengan email 'admin1@gmail.com'
+        if (User::where('email', 'admin1@gmail.com')->doesntExist()) {
+            User::create([
+                'name' => 'admin1',
+                'email' => 'admin1@gmail.com',
+                'password' => bcrypt('12345678'),  // Pastikan password dienkripsi
+                'role' => 'admin',  // Role yang ingin diberikan
+            ]);
+        }
+    }
+
+    public function down()
+    {
+        // Menghapus user jika migrasi dibatalkan
+        User::where('email', 'admin1@gmail.com')->delete();
+    }
+}

@@ -1,0 +1,23 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void {
+        Schema::create('data_setoran', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('nasabah_id')->constrained('data_nasabah')->onDelete('cascade');
+            $table->foreignId('sampah_id')->constrained('data_sampah')->onDelete('cascade');
+            $table->float('berat'); // berat dalam kg
+            $table->decimal('total_harga', 12, 2);
+            $table->date('tanggal_setor');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void {
+        Schema::dropIfExists('data_setoran');
+    }
+};
