@@ -5,7 +5,7 @@ Tutor install
  use Spatie\Permission\Models\Role;
 
 $role = Role::create(['name' => 'admin']);
-$user = \App\Models\User::where('email', 'admin@gmail.com')->first();
+$user = \App\Models\User::where('email', 'admin1@gmail.com')->first();
 $user->assignRole('admin');
 $user->hasRole('admin');
 
