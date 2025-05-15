@@ -8,3 +8,6 @@ $role = Role::create(['name' => 'admin']);
 $user = \App\Models\User::where('email', 'admin@gmail.com')->first();
 $user->assignRole('admin');
 $user->hasRole('admin');
+
+
+import a.sql manuwal
