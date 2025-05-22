@@ -26,7 +26,7 @@
         <div class="max-w-4xl text-center">
             <h2 class="text-4xl md:text-5xl font-bold text-green-800 mb-6 leading-tight">Ubah Sampah Jadi Tabungan</h2>
             <p class="text-lg text-gray-700 mb-8">
-                Bergabunglah bersama Bank Sampah Mlinjo Bersih untuk lingkungan yang lebih sehat dan masa depan yang lebih cerah. Setorkan sampah anorganikmu dan dapatkan saldo tabungan!
+                Bergabungla bersama Bank Sampah Mlinjo Bersih untuk lingkungan yang lebih sehat dan masa depan yang lebih cerah. Setorkan sampah anorganikmu dan dapatkan saldo tabungan!
             </p>
             <!-- <a href="{{ route('register') }}" class="bg-green-600 text-white px-6 py-3 rounded-lg text-lg hover:bg-green-700 transition">
                 Daftar Sekarang
