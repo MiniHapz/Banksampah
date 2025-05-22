@@ -1,13 +1,25 @@
 Tutor install
 
+composer install
 
- php artisan tinker
- use Spatie\Permission\Models\Role;
+npm install chart.js
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
 
-$role = Role::create(['name' => 'admin']);
-$user = \App\Models\User::where('email', 'admin1@gmail.com')->first();
-$user->assignRole('admin');
-$user->hasRole('admin');
+copy .env
 
+edit .env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=a
+DB_USERNAME=root
+DB_PASSWORD=
 
-import a.sql manuwal
+php artisan key:generate
+
+php artisan migrate
+
+php artisan db:seed
+
+php artisan serve
