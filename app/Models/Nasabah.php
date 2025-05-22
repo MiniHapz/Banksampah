@@ -28,5 +28,12 @@ public function setoran()
 {
     return $this->hasMany(Setoran::class, 'nik', 'nik');
 }
+public function tabungan()
+    {
+        // Misal 1 nasabah punya 1 tabungan
+        return $this->hasOne(Tabungan::class, 'nik', 'nik');
+        // artinya:
+        // model Tabungan punya kolom 'nik' yang jadi foreign key ke kolom 'nik' di Nasabah
+    }
 
 }

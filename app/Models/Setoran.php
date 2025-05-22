@@ -15,7 +15,7 @@ class Setoran extends Model
     protected $keyType = 'string';           // Karena no_transaksi berbentuk string
 
     protected $fillable = [
-        'no_transaksi',       // ✅ ini WAJIB ditambahkan!
+        'no_transaksi',       
         'no_tabungan',
         'tanggal_transaksi',
         'total',
@@ -34,8 +34,27 @@ class Setoran extends Model
         return $this->hasMany(DetailSetoran::class, 'no_transaksi', 'no_transaksi');
     }
 
-    public function nasabah()
+//     public function nasabah()
+// {
+//     return $this->belongsTo(Nasabah::class, 'nik', 'nik'); // Menyesuaikan dengan 'nik' yang ada di tabungan dan setoran
+// }
+
+public function getNamaNasabahAttribute()
 {
-    return $this->belongsTo(Nasabah::class, 'nik', 'nik'); // Menyesuaikan dengan 'nik' yang ada di tabungan dan setoran
+    // Cek dulu apakah relasi tabungan dan nasabah-nya ada
+    return $this->tabungan && $this->tabungan->nasabah
+        ? $this->tabungan->nasabah->nama_lengkap
+        : '-'; // fallback jika data tidak lengkap
+}
+public function nasabah()
+{
+    return $this->hasOneThrough(
+        Nasabah::class,
+        Tabungan::class,
+        'no_tabungan', // Foreign key Tabungan di Setoran
+        'nik',         // Foreign key Nasabah di Tabungan
+        'no_tabungan', // Local key Setoran
+        'nik'          // Local key Tabungan
+    );
 }
 }

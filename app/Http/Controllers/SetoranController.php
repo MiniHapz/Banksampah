@@ -15,11 +15,11 @@ class SetoranController extends Controller
 {
     public function index(Request $request)
     {
-        $data_setoran = Setoran::with('nasabah')->latest()->get();
+        $data_setoran = Setoran::with('tabungan.nasabah')->latest()->get();
         $detail_setoran = null;
 
         if ($request->has('no_transaksi')) {
-            $detail_setoran = Setoran::with(['nasabah', 'detailSetoran.sampah'])
+            $detail_setoran = Setoran::with(['tabungan.nasabah', 'detailSetoran.sampah'])
                 ->where('no_transaksi', $request->no_transaksi)
                 ->first();
         }
@@ -29,118 +29,128 @@ class SetoranController extends Controller
 
     public function create()
     {
-        $nasabah = Nasabah::where('aktif', true)->get();
+        $nasabah = Nasabah::with('tabungan')->where('aktif', true)->get();
         $sampah = DataSampah::all();
 
-        return view('admin.setoran.create', compact('nasabah', 'sampah'));
+        // Generate no_transaksi baru
+        $last = Setoran::latest('no_transaksi')->first();
+        $noUrut = $last ? (int) substr($last->no_transaksi, 4) + 1 : 1;
+        $idSetoran = 'STR-' . str_pad($noUrut, 5, '0', STR_PAD_LEFT);
+
+        return view('admin.setoran.create', compact('nasabah', 'sampah', 'idSetoran'));
     }
 
     public function store(Request $request)
-{
-    $request->validate([
-        'nik' => 'required|exists:data_nasabah,nik',
-        'tanggal_transaksi' => 'required|date',
-        'detail' => 'required|array',
-        'detail.*.sampah_id' => 'required|exists:data_sampah,sampah_id',
-        'detail.*.jumlah' => 'required|numeric|min:0.1',
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        // Ambil atau buat tabungan berdasarkan NIK
-        $tabungan = Tabungan::firstOrCreate(
-            ['nik' => $request->nik],
-            [
-                'no_tabungan' => 'TBG-' . strtoupper(uniqid()),
-                'total_tabungan' => 0,
-            ]
-        );
-
-        // Penomoran otomatis untuk transaksi
-        $last = Setoran::latest('no_transaksi')->first();
-        $noUrut = $last ? (int) substr($last->no_transaksi, 4) + 1 : 1;
-        $no_transaksi = 'STR-' . str_pad($noUrut, 5, '0', STR_PAD_LEFT);
-
-        // Simpan data setoran utama
-        $setoran = Setoran::create(attributes: [
-            'no_transaksi' => $no_transaksi,
-            'no_tabungan' => $tabungan->no_tabungan,
-            'tanggal_transaksi' => $request->tanggal_transaksi,
-            'total_kasar' => 0,
+    {
+        $request->validate([
+            'nik' => 'required|exists:data_nasabah,nik',
+            'tanggal_transaksi' => 'required|date',
+            'detail' => 'nullable|array',
+'detail.*.sampah_id' => 'nullable|exists:data_sampah,sampah_id',
+'detail.*.jumlah' => 'nullable|numeric|min:0.1',
         ]);
 
-        // Proses detail setoran
-        $total_kg = 0;
-$nominal_total = 0;
+        DB::beginTransaction();
 
-foreach ($request->detail as $d) {
-    $sampah = DataSampah::where('sampah_id', $d['sampah_id'])->firstOrFail();
+        try {
+            // Ambil atau buat tabungan berdasarkan NIK
+            $tabungan = Tabungan::firstOrCreate(
+                ['nik' => $request->nik],
+                [
+                    'no_tabungan' => 'TBG-' . strtoupper(uniqid()),
+                    'total_tabungan' => 0,
+                ]
+            );
 
-    $sub_total = $sampah->harga_per_kg * $d['jumlah'];
+            // Generate nomor transaksi
+            $last = Setoran::latest('no_transaksi')->first();
+            $noUrut = $last ? (int) substr($last->no_transaksi, 4) + 1 : 1;
+            $no_transaksi = 'STR-' . str_pad($noUrut, 5, '0', STR_PAD_LEFT);
 
-    DetailSetoran::create([
-        'no_transaksi' => $no_transaksi,
-        'sampah_id' => $sampah->sampah_id, // atau langsung $d['sampah_id']
-        'harga' => $sampah->harga_per_kg,
-        'jumlah' => $d['jumlah'],
-        'sub_total' => $sub_total,
-    ]);
+            // Simpan data setoran utama
+            $setoran = Setoran::create([
+                'no_transaksi' => $no_transaksi,
+                'no_tabungan' => $tabungan->no_tabungan,
+                'tanggal_transaksi' => $request->tanggal_transaksi,
+                'total_kasar' => 0,
+            ]);
 
-    $total_kg += $d['jumlah'];
-    $nominal_total += $sub_total;
-}
+            $total_kg = 0;
+            $nominal_total = 0;
 
-// Update total kasar di setoran
-$setoran->update(['total_kasar' => $nominal_total]);
+            foreach ($request->detail as $d) {
+                $sampah = DataSampah::findOrFail($d['sampah_id']);
 
-// Update atau buat detail tabungan
-DetailTabungan::updateOrCreate(
-    ['no_tabungan' => $tabungan->no_tabungan, 'no_transaksi' => $no_transaksi],
-    ['total_kg' => $total_kg, 'nominal_seluruh' => $nominal_total]
-);
-        DB::commit();
-        return redirect()->route('setoran.index')->with('success', 'Setoran berhasil ditambahkan!');
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return back()->withErrors('Terjadi kesalahan saat menyimpan setoran: ' . $e->getMessage());
+                $sub_total_awal = $sampah->harga_per_kg * $d['jumlah'];
+                $sub_total = $sub_total_awal * 0.9; // potong pajak 10%
+
+                DetailSetoran::create([
+                    'no_transaksi' => $no_transaksi,
+                    'sampah_id' => $sampah->sampah_id,
+                    'harga' => $sampah->harga_per_kg,
+                    'jumlah' => $d['jumlah'],
+                    'sub_total' => $sub_total,
+                ]);
+
+                $total_kg += $d['jumlah'];
+                $nominal_total += $sub_total;
+            }
+
+            // Update total kasar di setoran
+            $setoran->update(['total_kasar' => $nominal_total]);
+
+            // Update atau buat detail tabungan
+            DetailTabungan::updateOrCreate(
+                ['no_tabungan' => $tabungan->no_tabungan, 'no_transaksi' => $no_transaksi],
+                ['total_kg' => $total_kg, 'nominal_seluruh' => $nominal_total]
+            );
+
+            DB::commit();
+
+            return redirect()->route('setoran.index')->with('success', 'Setoran berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors('Terjadi kesalahan saat menyimpan setoran: ' . $e->getMessage())->withInput();
+        }
     }
-}
 
     public function show($no_transaksi)
     {
-        $setoran = Setoran::with(['nasabah', 'detailSetoran.sampah'])
+        $setoran = Setoran::with(['tabungan.nasabah', 'detailSetoran.sampah'])
             ->where('no_transaksi', $no_transaksi)
             ->firstOrFail();
 
         $sampah = DataSampah::all();
+
         return view('admin.setoran.show', compact('setoran', 'sampah'));
     }
 
     public function storeDetail(Request $request, $no_transaksi)
     {
         $request->validate([
-            'sampah_id' => 'required|exists:data_sampah,id',
+            'sampah_id' => 'required|exists:data_sampah,sampah_id',
             'harga' => 'required|numeric|min:0',
-            'jumlah' => 'required|numeric|min:0.1', // Ganti 'berat' dengan 'jumlah'
+            'jumlah' => 'required|numeric|min:0.1',
         ]);
-    
+
         $setoran = Setoran::where('no_transaksi', $no_transaksi)->firstOrFail();
-        $sub_total = $request->harga * $request->jumlah;
-    
+
+        $sub_total_awal = $request->harga * $request->jumlah;
+        $sub_total = $sub_total_awal * 0.9; // potong pajak 10%
+
         DetailSetoran::create([
             'no_transaksi' => $no_transaksi,
             'sampah_id' => $request->sampah_id,
             'harga' => $request->harga,
-            'jumlah' => $request->jumlah, // Menggunakan 'jumlah'
+            'jumlah' => $request->jumlah,
             'sub_total' => $sub_total,
         ]);
-    
+
         $this->updateTotalSetoranDanTabungan($setoran);
-    
+
         return redirect()->back()->with('success', 'Detail setoran ditambahkan!');
     }
-    
+
     public function deleteDetail($no_transaksi, $id)
     {
         $detail = DetailSetoran::findOrFail($id);
