@@ -30,8 +30,8 @@
                         <td class="border p-2 text-center">{{ $user->email }}</td>
                         <td class="border p-2 text-center">{{ ucfirst($user->role) }}</td>
                         <td class="border p-2 text-center space-x-1">
-                            <a href="{{ route('admin.data-pengguna.edit', $user->id) }}" class="btn btn-primary">Edit</a>
-                            <form action="{{ route('admin.data-pengguna.destroy', $user->id) }}" method="POST" class="inline">
+                            <a href="{{ route('admin.data-pengguna.edit', $user->user_id) }}" class="btn btn-primary">Edit</a>
+                            <form action="{{ route('admin.data-pengguna.destroy', $user->user_id) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" onclick="return confirm('Yakin ingin menghapus pengguna ini?')" class="btn btn-primary">

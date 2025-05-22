@@ -10,30 +10,43 @@ class Nasabah extends Model
     use HasFactory;
 
     protected $table = 'data_nasabah';
-
-    protected $primaryKey = 'nik';  // Menetapkan 'nik' sebagai primary key
-    public $incrementing = false;   // Menyatakan 'nik' bukan auto-increment
+    protected $primaryKey = 'nik';
+    public $incrementing = false;
 
     protected $fillable = [
-        'nik', 'nama_lengkap', 'no_telp', 'dusun', 'rt', 'rw', 'jenis_kelamin', 'tanggal_lahir', 'saldo', 'aktif',
+        'nik',
+        'user_id', // pastikan kolom ini ada di tabel
+        'nama_lengkap',
+        'no_telp',
+        'dusun',
+        'rt',
+        'rw',
+        'jenis_kelamin',
+        'tanggal_lahir',
+        'aktif',
     ];
 
-    public function data_setoran()
+    /**
+     * Relasi ke user (pemilik akun)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Relasi ke data setoran (duplikat fungsi sebelumnya dihapus)
+     */
+    public function setoran()
     {
         return $this->hasMany(Setoran::class, 'nik', 'nik');
     }
-    // Model Nasabah
 
-public function setoran()
-{
-    return $this->hasMany(Setoran::class, 'nik', 'nik');
-}
-public function tabungan()
+    /**
+     * Relasi ke tabungan
+     */
+    public function tabungan()
     {
-        // Misal 1 nasabah punya 1 tabungan
         return $this->hasOne(Tabungan::class, 'nik', 'nik');
-        // artinya:
-        // model Tabungan punya kolom 'nik' yang jadi foreign key ke kolom 'nik' di Nasabah
     }
-
 }
