@@ -4,7 +4,7 @@
 <div class="flex">
 
         <div class="p-6 bg-white rounded shadow flex-1">
-            <h1 class="text-2xl font-bold mb-4">Data Penarikan</h1>
+            <h1 class="text-2xl font-bold mb-4">Data Penarika</h1>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white border border-gray-300">
